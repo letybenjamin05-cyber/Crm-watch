@@ -1,0 +1,32 @@
+{
+  "name": "WatchCRM - Montres Vintage",
+  "short_name": "WatchCRM",
+  "description": "CRM/ERP pour la gestion de stock de montres vintage achat-revente",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#f59e0b",
+  "orientation": "any",
+  "categories": ["business", "finance"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

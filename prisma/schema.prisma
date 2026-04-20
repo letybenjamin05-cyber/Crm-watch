@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Statut values: EN_ATTENTE | EN_STOCK | EN_VENTE | VENDU | RETOUR | SAV
+model Watch {
+  id          String   @id @default(cuid())
+  marque      String
+  modele      String
+  reference   String?
+  calibre     String?
+  diametre    Float?
+  etat        String   @default("Bon")
+  fullSet     Boolean  @default(false)
+  statut      String   @default("EN_ATTENTE")
+  notes       String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  achat       Achat?
+  vente       Vente?
+}
+
+model Achat {
+  id              String   @id @default(cuid())
+  watchId         String   @unique
+  watch           Watch    @relation(fields: [watchId], references: [id], onDelete: Cascade)
+  prixMontre      Float    @default(0)
+  fraisProxy      Float    @default(0)
+  fraisPort       Float    @default(0)
+  fraisReparation Float    @default(0)
+  fraisDouane     Float    @default(0)
+  coutTotal       Float    @default(0)
+  dateAchat       DateTime @default(now())
+  fournisseur     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Vente {
+  id          String   @id @default(cuid())
+  watchId     String   @unique
+  watch       Watch    @relation(fields: [watchId], references: [id], onDelete: Cascade)
+  prixVente   Float
+  plateforme  String?
+  acheteur    String?
+  dateVente   DateTime @default(now())
+  benefice    Float    @default(0)
+  marge       Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
