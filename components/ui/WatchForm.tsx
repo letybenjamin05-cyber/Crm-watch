@@ -18,9 +18,11 @@ function generateAnnonce(watch: {
   diametre?: string; etat: string; fullSet: boolean; notes?: string;
   prixMarche?: string;
 }, coutTotal: number): string {
-  const prix = parseFloat(watch.prixMarche || "0");
+  const etatNote = watch.notes ?? "Fonctionnement parfait, entretien soigné.";
   const lignes = [
     `🕰️ ${watch.marque} ${watch.modele}${watch.reference ? ` – Réf. ${watch.reference}` : ""}`,
+    "",
+    `Belle pièce de collection en état ${watch.etat.toLowerCase()}, proposée par un passionné d'horlogerie. ${watch.fullSet ? "Livrée complète boîte et papiers d'origine." : ""}`.trim(),
     "",
     `📋 CARACTÉRISTIQUES`,
     `• Marque : ${watch.marque}`,
@@ -31,20 +33,12 @@ function generateAnnonce(watch: {
     `• État : ${watch.etat}`,
     `• Full Set : ${watch.fullSet ? "Oui (boîte + papiers)" : "Non"}`,
     "",
-    `✅ ÉTAT GÉNÉRAL`,
-    `Montre en état ${watch.etat.toLowerCase()}. ${watch.notes ? watch.notes : `Pièce soigneusement entretenue, fonctionnement parfait.`}`,
+    `✅ ÉTAT & NOTES`,
+    etatNote,
     "",
-    `💼 VENTE`,
-    `Pièce proposée par un particulier passionné, envoi sécurisé assuré et remise en main propre possible (région parisienne).`,
+    `📦 EXPÉDITION`,
+    `Envoi sécurisé en recommandé avec assurance valeur — remise en main propre possible (région parisienne).`,
     "",
-    `📦 LIVRAISON`,
-    `Expédition en recommandé avec assurance valeur. Paiement sécurisé.`,
-    "",
-    ...(watch.fullSet ? [
-      `📁 DOCUMENTS`,
-      `Boîte et papiers d'origine inclus.`,
-      "",
-    ] : []),
     `#${watch.marque.replace(/\s/g, "")} #montrevintage #horlogerie #watchcollector`,
   ];
   return lignes.join("\n");
