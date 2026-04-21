@@ -45,8 +45,12 @@ export type WatchWithRelations = {
   statut: string;
   notes: string | null;
   imageUrl: string | null;
+  prixMarche: number | null;
+  dateRevision: Date | null;
+  dateMiseEnStock: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  photos: { id: string; url: string; ordre: number }[];
   achat: {
     id: string;
     prixMontre: number;

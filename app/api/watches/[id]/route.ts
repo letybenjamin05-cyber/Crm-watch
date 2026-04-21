@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const watch = await prisma.watch.findUnique({
       where: { id },
-      include: { achat: true, vente: true },
+      include: { achat: true, vente: true, photos: { orderBy: { ordre: "asc" } } },
     });
     if (!watch) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(watch);
@@ -19,52 +16,37 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await req.json();
-    const {
-      marque,
-      modele,
-      reference,
-      calibre,
-      diametre,
-      etat,
-      fullSet,
-      statut,
-      notes,
-      achat,
-      vente,
-    } = body;
+    const { marque, modele, reference, calibre, diametre, etat, fullSet, statut,
+            notes, prixMarche, dateRevision, achat, vente } = body;
 
-    // Update watch
-    const watch = await prisma.watch.update({
+    const prev = await prisma.watch.findUnique({ where: { id } });
+
+    await prisma.watch.update({
       where: { id },
       data: {
-        marque,
-        modele,
+        marque, modele,
         reference: reference || null,
         calibre: calibre || null,
         diametre: diametre ? parseFloat(diametre) : null,
-        etat,
-        fullSet: fullSet || false,
-        statut,
+        etat, fullSet: fullSet || false, statut,
         notes: notes || null,
+        prixMarche: prixMarche ? parseFloat(prixMarche) : null,
+        dateRevision: dateRevision ? new Date(dateRevision) : null,
+        // Enregistre la date de mise en stock au premier passage à EN_STOCK
+        ...(statut === "EN_STOCK" && prev?.statut !== "EN_STOCK"
+          ? { dateMiseEnStock: new Date() }
+          : {}),
       },
     });
 
-    // Upsert achat
     if (achat) {
-      const coutTotal =
-        (parseFloat(achat.prixMontre) || 0) +
-        (parseFloat(achat.fraisProxy) || 0) +
-        (parseFloat(achat.fraisPort) || 0) +
-        (parseFloat(achat.fraisReparation) || 0) +
-        (parseFloat(achat.fraisDouane) || 0);
-
+      const coutTotal = (parseFloat(achat.prixMontre) || 0) + (parseFloat(achat.fraisProxy) || 0)
+        + (parseFloat(achat.fraisPort) || 0) + (parseFloat(achat.fraisReparation) || 0)
+        + (parseFloat(achat.fraisDouane) || 0);
       await prisma.achat.upsert({
         where: { watchId: id },
         create: {
@@ -91,38 +73,31 @@ export async function PUT(
       });
     }
 
-    // Upsert vente
-    if (vente && vente.prixVente) {
+    if (vente?.prixVente) {
       const coutTotal = (await prisma.achat.findUnique({ where: { watchId: id } }))?.coutTotal || 0;
       const prixVente = parseFloat(vente.prixVente);
       const benefice = prixVente - coutTotal;
       const marge = coutTotal > 0 ? (benefice / coutTotal) * 100 : 0;
-
       await prisma.vente.upsert({
         where: { watchId: id },
         create: {
-          watchId: id,
-          prixVente,
+          watchId: id, prixVente, benefice, marge,
           plateforme: vente.plateforme || null,
           acheteur: vente.acheteur || null,
           dateVente: vente.dateVente ? new Date(vente.dateVente) : new Date(),
-          benefice,
-          marge,
         },
         update: {
-          prixVente,
+          prixVente, benefice, marge,
           plateforme: vente.plateforme || null,
           acheteur: vente.acheteur || null,
           dateVente: vente.dateVente ? new Date(vente.dateVente) : new Date(),
-          benefice,
-          marge,
         },
       });
     }
 
     const updated = await prisma.watch.findUnique({
       where: { id },
-      include: { achat: true, vente: true },
+      include: { achat: true, vente: true, photos: { orderBy: { ordre: "asc" } } },
     });
     return NextResponse.json(updated);
   } catch (error) {
@@ -131,10 +106,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     await prisma.watch.delete({ where: { id } });

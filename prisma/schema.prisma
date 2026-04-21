@@ -8,24 +8,27 @@ datasource db {
   directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
-// Statut values: EN_ATTENTE | EN_STOCK | EN_VENTE | VENDU | RETOUR | SAV
 model Watch {
-  id          String   @id @default(cuid())
-  marque      String
-  modele      String
-  reference   String?
-  calibre     String?
-  diametre    Float?
-  etat        String   @default("Bon")
-  fullSet     Boolean  @default(false)
-  statut      String   @default("EN_ATTENTE")
-  notes       String?
-  imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String       @id @default(cuid())
+  marque           String
+  modele           String
+  reference        String?
+  calibre          String?
+  diametre         Float?
+  etat             String       @default("Bon")
+  fullSet          Boolean      @default(false)
+  statut           String       @default("EN_ATTENTE")
+  notes            String?
+  imageUrl         String?
+  prixMarche       Float?
+  dateRevision     DateTime?
+  dateMiseEnStock  DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
-  achat       Achat?
-  vente       Vente?
+  achat            Achat?
+  vente            Vente?
+  photos           WatchPhoto[]
 }
 
 model Achat {
@@ -56,4 +59,39 @@ model Vente {
   marge       Float    @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model WatchPhoto {
+  id        String   @id @default(cuid())
+  watchId   String
+  watch     Watch    @relation(fields: [watchId], references: [id], onDelete: Cascade)
+  url       String
+  ordre     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Client {
+  id               String     @id @default(cuid())
+  nom              String
+  prenom           String?
+  email            String?
+  telephone        String?
+  instagram        String?
+  statut           String     @default("PROSPECT")
+  budgetMax        Float?
+  notes            String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  wishlist         WishItem[]
+}
+
+model WishItem {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  marque    String
+  modele    String?
+  priorite  String   @default("MOYENNE")
+  notes     String?
+  createdAt DateTime @default(now())
 }
