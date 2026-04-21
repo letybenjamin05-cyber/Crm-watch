@@ -13,36 +13,6 @@ interface WatchFormProps {
 
 const STATUTS = Object.entries(STATUT_LABELS);
 
-function generateAnnonce(watch: {
-  marque: string; modele: string; reference?: string; calibre?: string;
-  diametre?: string; etat: string; fullSet: boolean; notes?: string;
-  prixMarche?: string;
-}, coutTotal: number): string {
-  const etatNote = watch.notes ?? "Fonctionnement parfait, entretien soigné.";
-  const lignes = [
-    `🕰️ ${watch.marque} ${watch.modele}${watch.reference ? ` – Réf. ${watch.reference}` : ""}`,
-    "",
-    `Belle pièce de collection en état ${watch.etat.toLowerCase()}, proposée par un passionné d'horlogerie. ${watch.fullSet ? "Livrée complète boîte et papiers d'origine." : ""}`.trim(),
-    "",
-    `📋 CARACTÉRISTIQUES`,
-    `• Marque : ${watch.marque}`,
-    `• Modèle : ${watch.modele}`,
-    ...(watch.reference ? [`• Référence : ${watch.reference}`] : []),
-    ...(watch.calibre ? [`• Calibre : ${watch.calibre}`] : []),
-    ...(watch.diametre ? [`• Diamètre : ${watch.diametre} mm`] : []),
-    `• État : ${watch.etat}`,
-    `• Full Set : ${watch.fullSet ? "Oui (boîte + papiers)" : "Non"}`,
-    "",
-    `✅ ÉTAT & NOTES`,
-    etatNote,
-    "",
-    `📦 EXPÉDITION`,
-    `Envoi sécurisé en recommandé avec assurance valeur — remise en main propre possible (région parisienne).`,
-    "",
-    `#${watch.marque.replace(/\s/g, "")} #montrevintage #horlogerie #watchcollector`,
-  ];
-  return lignes.join("\n");
-}
 
 export default function WatchForm({ initial, onSubmit, onCancel, loading }: WatchFormProps) {
   const [watch, setWatch] = useState({
@@ -86,6 +56,7 @@ export default function WatchForm({ initial, onSubmit, onCancel, loading }: Watc
     (initial as WatchWithRelations & { photos?: { id: string; url: string }[] })?.photos ?? []
   );
   const [uploading, setUploading] = useState(false);
+  const [generatingAnnonce, setGeneratingAnnonce] = useState(false);
   const [annonce, setAnnonce] = useState("");
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"fiche" | "achat" | "vente" | "photos" | "annonce">("fiche");
@@ -135,10 +106,20 @@ export default function WatchForm({ initial, onSubmit, onCancel, loading }: Watc
     setPhotos((p) => p.filter((ph) => ph.id !== photoId));
   };
 
-  const handleGenerateAnnonce = () => {
-    const text = generateAnnonce(watch, coutTotal);
-    setAnnonce(text);
+  const handleGenerateAnnonce = async () => {
+    setGeneratingAnnonce(true);
     setActiveTab("annonce");
+    try {
+      const res = await fetch("/api/annonce", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(watch),
+      });
+      const data = await res.json();
+      setAnnonce(data.annonce ?? "");
+    } finally {
+      setGeneratingAnnonce(false);
+    }
   };
 
   const handleCopy = () => {
@@ -341,11 +322,17 @@ export default function WatchForm({ initial, onSubmit, onCancel, loading }: Watc
       {/* ANNONCE */}
       {activeTab === "annonce" && (
         <div className="space-y-3">
-          <button type="button" onClick={handleGenerateAnnonce}
-            className="w-full flex items-center justify-center gap-2 btn-primary">
-            <Sparkles size={16} /> Générer l&apos;annonce
+          <button type="button" onClick={handleGenerateAnnonce} disabled={generatingAnnonce}
+            className="w-full flex items-center justify-center gap-2 btn-primary disabled:opacity-60">
+            {generatingAnnonce
+              ? <><div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> Génération en cours…</>
+              : <><Sparkles size={16} /> {annonce ? "Regénérer" : "Générer l'annonce"}</>
+            }
           </button>
-          {annonce && (
+          {generatingAnnonce && (
+            <p className="text-xs text-zinc-500 text-center">Claude rédige votre annonce…</p>
+          )}
+          {annonce && !generatingAnnonce && (
             <>
               <div className="relative">
                 <textarea
@@ -360,7 +347,7 @@ export default function WatchForm({ initial, onSubmit, onCancel, loading }: Watc
               </button>
             </>
           )}
-          {!annonce && (
+          {!annonce && !generatingAnnonce && (
             <p className="text-xs text-zinc-600 text-center">
               Cliquez sur &quot;Générer&quot; pour créer une annonce professionnelle basée sur la fiche.
             </p>
